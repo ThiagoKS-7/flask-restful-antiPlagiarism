@@ -5,7 +5,7 @@ post de similarity - 1 token
 '''
 from flask import Flask,render_template
 from flask_restful import Api 
-# from models.resources.manage_sentence import Register, Store, GetUsers
+from models.resources.manage_similiarity import Register,Detect, GetUsers,Refill
 
 app = Flask(__name__)
 api =  Api(app)
@@ -14,14 +14,15 @@ title = "Flask tutorial"
 subtitle = "Running on port 5000"
 
 
-# '''
-#  ***********************
-#  *       API ROUTES    *
-#  ***********************
-# '''
-# api.add_resource(Register, '/register')
-# api.add_resource(Store, '/store')
-# api.add_resource(GetUsers, '/get-users')
+'''
+***********************
+  *       API ROUTES    *
+  ***********************
+'''
+api.add_resource(Register, '/register')
+api.add_resource(Detect, '/detect')
+api.add_resource(GetUsers, '/get-users')
+api.add_resource(Refill, '/refill')
 
 '''
 ***********************

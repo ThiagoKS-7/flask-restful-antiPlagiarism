@@ -1,6 +1,7 @@
 import bcrypt
 from flask import Response
 from datetime import datetime
+import spacy
 
 
 def checkPostedData(collection,body, functionName):
@@ -23,7 +24,9 @@ def checkPostedData(collection,body, functionName):
       collection.insert_one({
         "Username":usr,
         "Password":hash_pwd,
-        "Sentence":"",
+        "Text1":"",
+        "Text2":"",
+        "Similiarity":"", 
         "Tokens": 10,
         "CreatedAt": datetime.now(),
         "UpdatedAt":""
@@ -40,9 +43,11 @@ def checkPostedData(collection,body, functionName):
 
     return retJson
 
-  elif functionName == 'store':
+  elif functionName == 'detect':
     usr = body["username"]
-    sentence = body["sentence"]
+    pwd = body["password"]
+    text1 = body["text1"]
+    text2 = body["text2"]
     pwd_exists = collection.find_one({'Username': usr})["Password"]
     #se existe um password pra aquele user, é pq ele existe
     if pwd_exists:
@@ -55,9 +60,14 @@ def checkPostedData(collection,body, functionName):
           "status": 301
         }
       else:
+        # usa natural language processing pra comparar os textos
+        nlp = spacy.load("en_core_web_sm")
+        text1 = nlp(text1)
+        text2 = nlp(text2)
+        ratio = text1.similarity(text2)
         tokens = tokens -1
         collection.update_one({'Username': usr}, {"$set": {
-          "Sentence": sentence,
+          "Similiarity": ratio,
           "Tokens": tokens,
           "UpdatedAt": datetime.now(),
         }})
@@ -90,10 +100,11 @@ def checkPostedData(collection,body, functionName):
       else:
         tokens = tokens -1
         result = []
-        for col in collection.find({},{"Username":1, "Sentence":1, "Tokens":1}):
+        for col in collection.find({},{"Username":1, "Text1":1, "Text2":1, "Tokens":1}):
           result.append({
             "username":col["Username"],
-            "sentence":col["Sentence"],
+            "text1":col["Text1"],
+            "text2":col["Text2"],
             "tokens":col["Tokens"],
           })
         
@@ -106,6 +117,32 @@ def checkPostedData(collection,body, functionName):
     else:
       retJson = {
       "message":"Error! User or password incorrect.",
+      "status": 400
+      }
+
+    return retJson
+
+  elif functionName == 'refill':
+    usr = body["username"]
+    target=body["target"]
+    pwd = body["password"]
+    tokens = body["tokens"]
+    pwd_exists = collection.find_one({'Username': usr})["Password"]
+    #se existe um password pra aquele user, é pq ele existe
+    if pwd_exists and usr == 'admin':
+      #faz update
+      collection.update_one({'Username': target}, {"$set": {
+        "Tokens": tokens,
+        "UpdatedAt": datetime.now(),
+      }})
+      retJson = {
+        "message":"Sentence successfully saved.",
+        "Tokens": tokens,
+        "status": 200,
+      }
+    else:
+      retJson = {
+      "message":"Error! Only admin can refill tokens.",
       "status": 400
       }
 
